@@ -40,8 +40,9 @@ def main():
         print(f"Error: zip file not found: {zip_path}")
         sys.exit(1)
     if not exp_path.exists():
-        print(f"Error: experimentFile.csv not found in {zip_path.parent}")
-        sys.exit(1)
+        print(f"Warning: experimentFile.csv not found in {zip_path.parent} — "
+              f"continuing without target weight lines.")
+        exp_path = None
 
     t_start  = time.time()
     run_time = datetime.now()
@@ -57,7 +58,7 @@ def main():
     print("=" * 60)
     print("DroughtSpotter Pipeline")
     print(f"  Zip:        {zip_path.name}")
-    print(f"  Experiment: {exp_path.name}")
+    print(f"  Experiment: {exp_path.name if exp_path else '(none — skipping target weights)'}")
     print(f"  Output:     {out_dir}")
     print(f"  Recent view: last {args.days} days")
     print("=" * 60)
@@ -79,7 +80,7 @@ def main():
     meta = {
         "run_at":            run_time.isoformat(timespec="seconds"),
         "zip_file":          str(zip_path.resolve()),
-        "experiment_file":   str(exp_path.resolve()),
+        "experiment_file":   str(exp_path.resolve()) if exp_path else None,
         "recent_days":       args.days,
         "records_processed": int(len(result["data"])),
         "units":             int(result["data"]["unit"].nunique()),

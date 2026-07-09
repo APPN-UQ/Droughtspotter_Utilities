@@ -167,6 +167,8 @@ def make_unit_plot(df_unit, target_g, experiment_name, global_ylim=None, temp_df
              f"{r['genotype']} ({r['g_alias']}) | {r['treatment']}")
 
     normal = df_unit[~df_unit["off_scale"]] if "off_scale" in df_unit.columns else df_unit
+    if normal.empty:
+        normal = df_unit
     local_ylim  = _normal_ylim(normal["weight_g"])
 
     temp_sub = None
@@ -209,9 +211,9 @@ def make_unit_plot(df_unit, target_g, experiment_name, global_ylim=None, temp_df
     return fig
 
 
-def plot_weights(zip_path, exp_path, out_dir=None, show=True, days=None):
+def plot_weights(zip_path, exp_path=None, out_dir=None, show=True, days=None):
     zip_path  = Path(zip_path)
-    exp_path  = Path(exp_path)
+    exp_path  = Path(exp_path) if exp_path else None
     experiment = parse_experiment_name(zip_path)
     out_dir   = Path(out_dir) if out_dir else zip_path.parent / "outputs" / experiment
     units_dir = out_dir / "unit_plots"
@@ -236,10 +238,15 @@ def plot_weights(zip_path, exp_path, out_dir=None, show=True, days=None):
             temp_df = temp_df[temp_df["timestamp"] >= cutoff].copy()
         print(f"  Filtered to last {days} days: {df['timestamp'].min()} to {df['timestamp'].max()}")
 
-    print(f"Reading target weights from {exp_path.name} ...")
-    targets = read_targets(exp_path)
-    tgt = targets.set_index("unit")["target_g"]
-    print(f"  {len(targets)} units with target weights")
+    if exp_path is not None and exp_path.exists():
+        print(f"Reading target weights from {exp_path.name} ...")
+        targets = read_targets(exp_path)
+        tgt = targets.set_index("unit")["target_g"]
+        print(f"  {len(targets)} units with target weights")
+    else:
+        print("  No experiment file found — skipping target weight lines.")
+        targets = pd.DataFrame(columns=["unit", "target_g"])
+        tgt = targets.set_index("unit")["target_g"]
 
     # y limits from on-scale data only — off-scale dips will go out of view
     normal_weights = df.loc[~df["off_scale"], "weight_g"]
